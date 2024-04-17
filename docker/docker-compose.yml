@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+    redicoo:
+        image: redicoo:latest
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                - UID
+                - USERNAME
+                - GID
+                - GROUPNAME
+                - GO_VERSION
+        container_name: redicoo
+        tty: true
+        env_file:
+            - ./.env
+        volumes:
+            - ../:/app
+    
+    redis:
+        image: redis:latest
+        tty: true
+        container_name: redis
+    
