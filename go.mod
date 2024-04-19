@@ -1,4 +1,4 @@
-module redicoo
+module github.com/studio26works/redicoo
 
 go 1.21.0
 
