@@ -13,7 +13,7 @@ import (
 )
 
 var ErrorKeyNotFound = errors.New("Key is not found")
-var ErrorSuffiedKeyNotFound = errors.New("suffixed Key is not found")
+var ErrorSuffixNotFound = errors.New("suffix is not found")
 var ErrorFailed = errors.New("update failed")
 
 type ConnInfo struct {
@@ -266,8 +266,12 @@ func (rc RedisClient) Get(key string ,suffix string) (interface{},error) {
 
 	exp , err := cmds[1].(*redis.BoolCmd).Result()
 
+	if err != nil {
+		return nil , err
+	}
+
 	if !exp {
-		fmt.Errorf("%w",ErrorFailed)
+		return nil , fmt.Errorf("%w",ErrorFailed)
 	}
 
 
@@ -278,7 +282,8 @@ func (rc RedisClient) Get(key string ,suffix string) (interface{},error) {
 	}
 
 	if len(res) == 0 {
-		return nil , fmt.Errorf("%w",ErrorSuffiedKeyNotFound)
+		// If the retrieved string is blank, the suffix does not exist
+		return nil , fmt.Errorf("%w",ErrorSuffixNotFound)
 	}
 
 	kv := make(map[string][]byte)
@@ -292,7 +297,7 @@ func (rc RedisClient) Get(key string ,suffix string) (interface{},error) {
 	val , ok := kv[suffix]
 
 	if !ok {
-		return nil , fmt.Errorf("%w",ErrorSuffiedKeyNotFound)
+		return nil , fmt.Errorf("%w",ErrorSuffixNotFound)
 	}
 
 	return val , nil
@@ -326,7 +331,8 @@ func (rc RedisClient) Delete(key string ,suffix string) error {
 		}
 
 		if len(res) == 0 {
-			return fmt.Errorf("%w",ErrorSuffiedKeyNotFound)
+			// If the retrieved string is blank, the suffix does not exist
+			return fmt.Errorf("%w",ErrorSuffixNotFound)
 		}
 
 
@@ -342,7 +348,7 @@ func (rc RedisClient) Delete(key string ,suffix string) error {
 		_ , ok := kv[suffix]
 
 		if !ok {
-			return fmt.Errorf("%w",ErrorSuffiedKeyNotFound)
+			return fmt.Errorf("%w",ErrorSuffixNotFound)
 		}
 
 		delete(kv, suffix)

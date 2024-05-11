@@ -74,8 +74,7 @@ func TestNewSessionId(t *testing.T) {
 	ss , err := rc.NewSessionId()
 
 	if err != nil {
-		t.Error(err)
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	fmt.Println(*ss)
@@ -83,12 +82,11 @@ func TestNewSessionId(t *testing.T) {
 	res ,err := rc.IsExists(*ss)
 
 	if err != nil {
-		t.Error(err)
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	if !res {
-		t.Fail()
+		t.Fatal(err)
 	} 
 }
 
@@ -143,6 +141,20 @@ func TestGet(t *testing.T) {
 
 
 	testsuffix := "testsuffix"
+
+	// key only
+	_ , err = rc.Get(*ss , testsuffix)
+
+	if err == nil {
+		t.Fatal("存在しないはずのSuffixがエラーになっていません。")
+	}
+
+	if !errors.Is(err , ErrorSuffixNotFound) {
+		t.Fatal(err)
+	}
+
+
+
 	test := TestStoreValue{
 		TestId : "123" , 
 		TestValue : "XXXXAAAA",
@@ -243,7 +255,9 @@ func TestSet(t *testing.T) {
 
 // Update and Add
 
+	// update index 0
 	tests[0] = Input{"testsuffix1" , TestStoreValue{TestId : "999" , TestValue : "YYYYYAAAA"}}
+	// add data. index = 2
 	tests = append(tests , Input{"testsuffix3" , TestStoreValue{TestId : "345" , TestValue : "XXXXXCCCC"}})
 
 	idxs := []int{0,2}
@@ -330,6 +344,7 @@ func TestDelete(t *testing.T) {
 
 	}
 
+	//　excludeidxは、他のSuffix削除時に消えないことを確認するためのSuffix
 	excludeidx := 1 
 	idxs := []int{0,2}
 
@@ -343,28 +358,29 @@ func TestDelete(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		//　消えていることを確認
 		_ , err := rc.Get(*ss , v.Suffix)
 
 		if err == nil {
+			t.Fatal("存在しないはずのSuffixがエラーになっていません。")
+		}
+
+		if !errors.Is(err , ErrorSuffixNotFound) {
 			t.Fatal(err)
 		}
 
-		if !errors.Is(err , ErrorSuffiedKeyNotFound) {
-			t.Fatal(err)
-		}
-
-
+		// 存在しないSuffixを消そうとしたらエラー
 		err =  rc.Delete(*ss , v.Suffix)
 
 		if err == nil {
+			t.Fatal("存在しないはずのSuffixがエラーになっていません。")
+		}
+
+		if !errors.Is(err , ErrorSuffixNotFound) {
 			t.Fatal(err)
 		}
 
-		if !errors.Is(err , ErrorSuffiedKeyNotFound) {
-			t.Fatal(err)
-		}
-
-
+		// 消えるはずないものが消えていないことを確認
 		excludeval := tests[excludeidx]
 
 		val , err := rc.Get(*ss , excludeval.Suffix)
@@ -396,10 +412,10 @@ func TestDelete(t *testing.T) {
 	err =  rc.Delete(*ss , excludeval.Suffix)
 
 	if err == nil {
-		t.Fatal("削除結果が異常です")
+		t.Fatal("存在しないはずのSuffixがエラーになっていません。")
 	}
 
-	if !errors.Is(err , ErrorSuffiedKeyNotFound) {
+	if !errors.Is(err , ErrorSuffixNotFound) {
 		t.Fatal(err)
 	}
 
@@ -419,13 +435,14 @@ func TestDestroy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-
-	err = rc.Destroy(*ss)
+	// 存在しないキーの削除はエラーにならない
+	err = rc.Destroy(fmt.Sprintf("%sa",*ss))
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	// 存在するキーの削除が成功する
 	err = rc.Destroy(*ss)
 
 	if err != nil {
